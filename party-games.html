@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Party Games</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700;900&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --card: #1c1c28;
+    --accent1: #ff6b35;
+    --accent2: #6c63ff;
+    --accent3: #00d4aa;
+    --text: #f0f0f8;
+    --muted: #888899;
+    --border: rgba(255,255,255,0.08);
+    --card-color: #1c1c28;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Manrope', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  .screen { display: none; min-height: 100vh; flex-direction: column; }
+  .screen.active { display: flex; }
+
+  /* ── HOME ── */
+  #home {
+    background: radial-gradient(ellipse at 20% 50%, rgba(108,99,255,0.15) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 20%, rgba(255,107,53,0.1) 0%, transparent 50%),
+                var(--bg);
+    align-items: center; justify-content: center; padding: 32px 20px;
+  }
+  .home-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: clamp(28px,8vw,52px); font-weight: 900;
+    text-align: center; line-height: 1.1;
+    background: linear-gradient(135deg, #ff6b35, #6c63ff, #00d4aa);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+  .home-sub { color: var(--muted); text-align: center; margin-bottom: 48px; font-size: 15px; }
+  .game-cards { display: flex; flex-direction: column; gap: 16px; width: 100%; max-width: 420px; }
+  .game-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px; padding: 24px;
+    cursor: pointer; transition: transform .2s, box-shadow .2s;
+    position: relative; overflow: hidden;
+  }
+  .game-card::before {
+    content: ''; position: absolute; inset: 0; opacity: 0;
+    transition: opacity .2s;
+  }
+  .game-card:hover { transform: translateY(-3px); }
+  .game-card:hover::before { opacity: 1; }
+  .game-card.mafia::before { background: linear-gradient(135deg, rgba(255,107,53,.1), transparent); }
+  .game-card.spy::before { background: linear-gradient(135deg, rgba(108,99,255,.1), transparent); }
+  .game-card.tod::before { background: linear-gradient(135deg, rgba(0,212,170,.1), transparent); }
+  .gc-icon { font-size: 36px; margin-bottom: 12px; }
+  .gc-title { font-family: 'Unbounded', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .gc-desc { color: var(--muted); font-size: 13px; }
+  .gc-arrow { position: absolute; right: 24px; top: 50%; transform: translateY(-50%); font-size: 24px; color: var(--muted); }
+
+  /* ── SETUP SCREENS ── */
+  .setup-screen {
+    padding: 24px 20px; max-width: 480px; margin: 0 auto; width: 100%;
+    flex-direction: column;
+  }
+  .back-btn {
+    background: var(--card); border: 1px solid var(--border);
+    color: var(--text); padding: 10px 16px; border-radius: 12px;
+    cursor: pointer; font-size: 14px; width: fit-content;
+    margin-bottom: 24px; font-family: 'Manrope', sans-serif;
+    transition: background .15s;
+  }
+  .back-btn:hover { background: rgba(255,255,255,.08); }
+  .setup-title {
+    font-family: 'Unbounded', sans-serif; font-size: 22px; font-weight: 700;
+    margin-bottom: 24px;
+  }
+  .field-label { color: var(--muted); font-size: 13px; margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+  .field-group { margin-bottom: 20px; }
+  .number-control { display: flex; align-items: center; gap: 16px; }
+  .num-btn {
+    width: 44px; height: 44px; border-radius: 12px;
+    background: var(--card); border: 1px solid var(--border);
+    color: var(--text); font-size: 20px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .15s;
+  }
+  .num-btn:hover { background: rgba(255,255,255,.1); }
+  .num-val { font-family: 'Unbounded', sans-serif; font-size: 24px; font-weight: 700; min-width: 40px; text-align: center; }
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px 18px; margin-bottom: 12px; }
+  .toggle-label { font-size: 14px; font-weight: 600; }
+  .toggle-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .toggle {
+    width: 48px; height: 26px; background: #333; border-radius: 13px;
+    position: relative; cursor: pointer; transition: background .2s;
+    border: none; flex-shrink: 0;
+  }
+  .toggle.on { background: var(--accent2); }
+  .toggle::after {
+    content: ''; position: absolute; width: 20px; height: 20px;
+    background: white; border-radius: 50%; top: 3px; left: 3px;
+    transition: left .2s;
+  }
+  .toggle.on::after { left: 25px; }
+  .start-btn {
+    width: 100%; padding: 18px; border-radius: 16px; border: none;
+    font-family: 'Unbounded', sans-serif; font-size: 16px; font-weight: 700;
+    cursor: pointer; margin-top: 8px; transition: transform .15s, opacity .15s;
+    letter-spacing: .5px;
+  }
+  .start-btn:hover { transform: scale(1.02); }
+  .start-btn.mafia-btn { background: linear-gradient(135deg, #ff6b35, #ff3d00); color: white; }
+  .start-btn.spy-btn { background: linear-gradient(135deg, #6c63ff, #4a00e0); color: white; }
+  .start-btn.tod-btn { background: linear-gradient(135deg, #00d4aa, #00796b); color: white; }
+
+  /* Categories */
+  .categories-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+  .cat-item {
+    background: var(--card); border: 2px solid var(--border);
+    border-radius: 12px; padding: 12px; cursor: pointer;
+    text-align: center; transition: border-color .15s, background .15s;
+  }
+  .cat-item.selected { border-color: var(--accent2); background: rgba(108,99,255,.12); }
+  .cat-item-icon { font-size: 22px; margin-bottom: 4px; }
+  .cat-item-name { font-size: 12px; font-weight: 600; }
+  .time-options { display: flex; gap: 8px; flex-wrap: wrap; }
+  .time-opt {
+    padding: 8px 16px; border-radius: 10px; background: var(--card);
+    border: 2px solid var(--border); cursor: pointer; font-size: 13px; font-weight: 600;
+    transition: border-color .15s, background .15s;
+  }
+  .time-opt.selected { border-color: var(--accent3); background: rgba(0,212,170,.12); }
+
+  /* ── CARDS ── */
+  #card-screen {
+    align-items: center; justify-content: center; padding: 20px;
+    background: radial-gradient(ellipse at center, rgba(108,99,255,.05) 0%, var(--bg) 70%);
+  }
+  .card-wrap { width: 100%; max-width: 380px; }
+  .card-progress { text-align: center; color: var(--muted); font-size: 13px; margin-bottom: 20px; font-weight: 600; }
+  .role-card {
+    background: var(--card-color);
+    border: 1px solid var(--border);
+    border-radius: 28px; padding: 32px 28px;
+    cursor: pointer; min-height: 420px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    transition: transform .15s;
+    box-shadow: 0 20px 60px rgba(0,0,0,.4);
+    user-select: none;
+  }
+  .role-card:active { transform: scale(.98); }
+  .card-number-face { text-align: center; }
+  .card-num { font-family: 'Unbounded', sans-serif; font-size: 80px; font-weight: 900; line-height: 1; margin-bottom: 8px; }
+  .card-tap-hint { color: var(--muted); font-size: 14px; }
+  .card-role-face { text-align: center; width: 100%; }
+  .card-role-icon { font-size: 56px; margin-bottom: 16px; }
+  .card-role-name { font-family: 'Unbounded', sans-serif; font-size: 22px; font-weight: 700; margin-bottom: 12px; }
+  .card-role-desc { color: var(--muted); font-size: 14px; line-height: 1.6; margin-bottom: 20px; }
+  .card-location { background: rgba(255,255,255,.06); border-radius: 12px; padding: 12px 16px; font-size: 14px; font-weight: 600; }
+  .card-next-btn {
+    margin-top: 20px; width: 100%; padding: 16px; border-radius: 14px; border: none;
+    font-family: 'Unbounded', sans-serif; font-size: 14px; font-weight: 700;
+    cursor: pointer; background: rgba(255,255,255,.08); color: var(--text);
+    transition: background .15s;
+  }
+  .card-next-btn:hover { background: rgba(255,255,255,.15); }
+
+  /* ── TIMER SCREEN ── */
+  #timer-screen {
+    align-items: center; justify-content: center; padding: 20px;
+    background: radial-gradient(ellipse at center, rgba(108,99,255,.08) 0%, var(--bg) 70%);
+  }
+  .timer-wrap { text-align: center; max-width: 380px; width: 100%; }
+  .timer-title { font-family: 'Unbounded', sans-serif; font-size: 20px; font-weight: 700; margin-bottom: 32px; }
+  .timer-ring { position: relative; width: 220px; height: 220px; margin: 0 auto 32px; }
+  .timer-ring svg { transform: rotate(-90deg); }
+  .timer-ring-bg { fill: none; stroke: rgba(255,255,255,.06); stroke-width: 8; }
+  .timer-ring-prog { fill: none; stroke: var(--accent2); stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset .5s linear; }
+  .timer-digits {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-family: 'Unbounded', sans-serif; font-size: 48px; font-weight: 900;
+  }
+  .timer-label { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
+  .timer-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .timer-btn {
+    padding: 14px 24px; border-radius: 14px; border: 1px solid var(--border);
+    background: var(--card); color: var(--text); cursor: pointer;
+    font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 700;
+    transition: background .15s;
+  }
+  .timer-btn:hover { background: rgba(255,255,255,.1); }
+  .timer-btn.primary { background: linear-gradient(135deg, #6c63ff, #4a00e0); border-color: transparent; }
+  .timer-btn.danger { background: linear-gradient(135deg, #ff6b35, #ff3d00); border-color: transparent; }
+  .spy-reveal { margin-top: 24px; background: var(--card); border-radius: 20px; padding: 20px; display: none; }
+  .spy-reveal-title { font-family: 'Unbounded', sans-serif; font-size: 14px; margin-bottom: 8px; color: var(--muted); }
+  .spy-reveal-name { font-family: 'Unbounded', sans-serif; font-size: 26px; font-weight: 900; color: var(--accent2); }
+  .spy-reveal-loc { font-size: 14px; color: var(--muted); margin-top: 8px; }
+
+  /* ── TRUTH OR DARE ── */
+  #tod-setup { flex-direction: column; }
+  .player-input-row { display: flex; gap: 10px; margin-bottom: 10px; }
+  .player-input {
+    flex: 1; background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 16px; color: var(--text);
+    font-family: 'Manrope', sans-serif; font-size: 14px;
+  }
+  .player-input:focus { outline: none; border-color: var(--accent3); }
+  .add-player-btn {
+    background: rgba(0,212,170,.15); border: 1px solid rgba(0,212,170,.3);
+    color: var(--accent3); border-radius: 12px; padding: 12px 16px;
+    cursor: pointer; font-size: 20px; transition: background .15s;
+  }
+  .add-player-btn:hover { background: rgba(0,212,170,.25); }
+  .player-chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 20px; padding: 6px 14px; margin: 4px; font-size: 13px;
+  }
+  .chip-remove { cursor: pointer; color: var(--muted); font-size: 16px; }
+  .players-chips { margin-bottom: 16px; }
+
+  /* ── WHEEL SCREEN ── */
+  #wheel-screen {
+    align-items: center; justify-content: center; padding: 20px;
+    background: radial-gradient(ellipse at center, rgba(0,212,170,.05) 0%, var(--bg) 70%);
+  }
+  .wheel-wrap { text-align: center; max-width: 420px; width: 100%; }
+  .wheel-title { font-family: 'Unbounded', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 24px; }
+  .wheel-container { position: relative; width: 300px; height: 300px; margin: 0 auto 24px; }
+  .wheel-canvas { width: 300px; height: 300px; border-radius: 50%; }
+  .wheel-pointer {
+    position: absolute; top: -16px; left: 50%; transform: translateX(-50%);
+    font-size: 28px; filter: drop-shadow(0 2px 4px rgba(0,0,0,.5));
+  }
+  .wheel-chosen {
+    font-family: 'Unbounded', sans-serif; font-size: 20px; font-weight: 700;
+    margin-bottom: 24px; min-height: 28px; color: var(--accent3);
+  }
+  .tod-type-btns { display: flex; gap: 12px; justify-content: center; margin-bottom: 20px; }
+  .tod-type-btn {
+    flex: 1; padding: 14px; border-radius: 14px; border: none;
+    font-family: 'Unbounded', sans-serif; font-size: 13px; font-weight: 700;
+    cursor: pointer; transition: transform .15s;
+  }
+  .tod-type-btn:hover { transform: scale(1.03); }
+  .tod-truth { background: linear-gradient(135deg, #6c63ff, #4a00e0); color: white; }
+  .tod-dare { background: linear-gradient(135deg, #ff6b35, #ff3d00); color: white; }
+  .tod-question-box {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 20px; padding: 24px; margin-bottom: 20px; min-height: 100px;
+    display: flex; align-items: center; justify-content: center; display: none;
+  }
+  .tod-question-text { font-size: 16px; line-height: 1.6; text-align: center; }
+  .spin-btn {
+    width: 100%; padding: 16px; border-radius: 14px; border: none;
+    background: linear-gradient(135deg, #00d4aa, #00796b); color: white;
+    font-family: 'Unbounded', sans-serif; font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: transform .15s;
+  }
+  .spin-btn:hover { transform: scale(1.02); }
+
+  /* Маленький util */
+  .hidden { display: none !important; }
+  .mt16 { margin-top: 16px; }
+  .separator { height: 1px; background: var(--border); margin: 16px 0; }
+</style>
+</head>
+<body>
+
+<!-- ══════ HOME ══════ -->
+<div id="home" class="screen active">
+  <div class="home-title">PARTY<br>GAMES</div>
+  <div class="home-sub">Выбери игру для компании</div>
+  <div class="game-cards">
+    <div class="game-card mafia" onclick="goTo('mafia-setup')">
+      <div class="gc-icon">🎭</div>
+      <div class="gc-title">Мафия</div>
+      <div class="gc-desc">Классическая игра на доверие и обман</div>
+      <div class="gc-arrow">›</div>
+    </div>
+    <div class="game-card spy" onclick="goTo('spy-setup')">
+      <div class="gc-icon">🕵️</div>
+      <div class="gc-title">Шпион</div>
+      <div class="gc-desc">Угадай кто среди вас шпион</div>
+      <div class="gc-arrow">›</div>
+    </div>
+    <div class="game-card tod" onclick="goTo('tod-setup')">
+      <div class="gc-icon">🎲</div>
+      <div class="gc-title">Правда или Действие</div>
+      <div class="gc-desc">Колесо фортуны решает твою судьбу</div>
+      <div class="gc-arrow">›</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ MAFIA SETUP ══════ -->
+<div id="mafia-setup" class="screen">
+  <div class="setup-screen">
+    <button class="back-btn" onclick="goTo('home')">← Назад</button>
+    <div class="setup-title">🎭 Мафия</div>
+    <div class="field-group">
+      <div class="field-label">Количество игроков</div>
+      <div class="number-control">
+        <button class="num-btn" onclick="change('mafiaPlayers',-1)">−</button>
+        <div class="num-val" id="mafiaPlayers-val">6</div>
+        <button class="num-btn" onclick="change('mafiaPlayers',1)">+</button>
+      </div>
+    </div>
+    <div class="field-group">
+      <div class="field-label">Количество мафий</div>
+      <div class="number-control">
+        <button class="num-btn" onclick="change('mafiaCount',-1)">−</button>
+        <div class="num-val" id="mafiaCount-val">2</div>
+        <button class="num-btn" onclick="change('mafiaCount',1)">+</button>
+      </div>
+    </div>
+    <div class="field-group">
+      <div class="field-label">Дополнительные роли</div>
+      <div class="toggle-row">
+        <div><div class="toggle-label">👮 Шериф</div><div class="toggle-sub">Видит роль одного игрока за ночь</div></div>
+        <button class="toggle" id="tog-sheriff" onclick="togToggle('sheriff')"></button>
+      </div>
+      <div class="toggle-row">
+        <div><div class="toggle-label">👨‍⚕️ Доктор</div><div class="toggle-sub">Может вылечить одного игрока за ночь</div></div>
+        <button class="toggle" id="tog-doctor" onclick="togToggle('doctor')"></button>
+      </div>
+    </div>
+    <button class="start-btn mafia-btn" onclick="startMafia()">Начать игру</button>
+  </div>
+</div>
+
+<!-- ══════ SPY SETUP ══════ -->
+<div id="spy-setup" class="screen">
+  <div class="setup-screen">
+    <button class="back-btn" onclick="goTo('home')">← Назад</button>
+    <div class="setup-title">🕵️ Шпион</div>
+    <div class="field-group">
+      <div class="field-label">Количество игроков</div>
+      <div class="number-control">
+        <button class="num-btn" onclick="change('spyPlayers',-1)">−</button>
+        <div class="num-val" id="spyPlayers-val">6</div>
+        <button class="num-btn" onclick="change('spyPlayers',1)">+</button>
+      </div>
+    </div>
+    <div class="field-group">
+      <div class="field-label">Количество шпионов</div>
+      <div class="number-control">
+        <button class="num-btn" onclick="change('spyCount',-1)">−</button>
+        <div class="num-val" id="spyCount-val">1</div>
+        <button class="num-btn" onclick="change('spyCount',1)">+</button>
+      </div>
+    </div>
+    <div class="field-group">
+      <div class="field-label">Время раунда</div>
+      <div class="time-options" id="time-options">
+        <div class="time-opt" onclick="selectTime(0)">Без лимита</div>
+        <div class="time-opt" onclick="selectTime(3)">3 мин</div>
+        <div class="time-opt selected" onclick="selectTime(5)">5 мин</div>
+        <div class="time-opt" onclick="selectTime(8)">8 мин</div>
+        <div class="time-opt" onclick="selectTime(10)">10 мин</div>
+      </div>
+    </div>
+    <div class="field-group">
+      <div class="field-label">Категория тем</div>
+      <div class="categories-grid" id="cat-grid"></div>
+    </div>
+    <div class="toggle-row" style="margin-bottom:20px">
+      <div>
+        <div class="toggle-label">🔥 Хардкор режим</div>
+        <div class="toggle-sub">Шпиону даётся другая случайная локация</div>
+      </div>
+      <button class="toggle" id="tog-hardcore" onclick="togToggle('hardcore')"></button>
+    </div>
+    <button class="start-btn spy-btn" onclick="startSpy()">Начать игру</button>
+  </div>
+</div>
+
+<!-- ══════ CARD SCREEN ══════ -->
+<div id="card-screen" class="screen">
+  <div class="card-wrap">
+    <div class="card-progress" id="card-progress">Игрок 1 из 6</div>
+    <div class="role-card" id="role-card" onclick="flipCard()">
+      <div class="card-number-face" id="card-front">
+        <div class="card-num" id="card-num">1</div>
+        <div class="card-tap-hint">Нажми чтобы увидеть роль</div>
+      </div>
+      <div class="card-role-face hidden" id="card-back">
+        <div class="card-role-icon" id="card-icon">🎭</div>
+        <div class="card-role-name" id="card-role">Мирный</div>
+        <div class="card-role-desc" id="card-desc">Ты мирный житель. Найди мафию!</div>
+        <div class="card-location hidden" id="card-location"></div>
+      </div>
+    </div>
+    <button class="card-next-btn hidden" id="card-next-btn" onclick="nextCard()">Передать следующему →</button>
+  </div>
+</div>
+
+<!-- ══════ TIMER SCREEN ══════ -->
+<div id="timer-screen" class="screen">
+  <div class="timer-wrap">
+    <div class="timer-title" id="timer-title">🕵️ Раунд идёт!</div>
+    <div class="timer-ring" id="timer-ring-wrap">
+      <svg width="220" height="220" viewBox="0 0 220 220">
+        <circle class="timer-ring-bg" cx="110" cy="110" r="100"/>
+        <circle class="timer-ring-prog" id="timer-ring" cx="110" cy="110" r="100"
+          stroke-dasharray="628" stroke-dashoffset="0"/>
+      </svg>
+      <div class="timer-digits" id="timer-digits">5:00</div>
+    </div>
+    <div class="timer-label" id="timer-label">Обсуждайте, задавайте вопросы!</div>
+    <div class="timer-btns">
+      <button class="timer-btn" id="timer-pause-btn" onclick="toggleTimer()">⏸ Пауза</button>
+      <button class="timer-btn danger" onclick="revealSpy()">🔍 Узнать кто шпион</button>
+      <button class="timer-btn" onclick="goTo('home')">🏠 Главная</button>
+    </div>
+    <div class="spy-reveal" id="spy-reveal">
+      <div class="spy-reveal-title">Шпион среди вас:</div>
+      <div class="spy-reveal-name" id="spy-reveal-name">—</div>
+      <div class="spy-reveal-loc" id="spy-reveal-loc"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ TOD SETUP ══════ -->
+<div id="tod-setup" class="screen">
+  <div class="setup-screen">
+    <button class="back-btn" onclick="goTo('home')">← Назад</button>
+    <div class="setup-title">🎲 Правда или Действие</div>
+    <div class="field-label">Добавь игроков</div>
+    <div class="player-input-row">
+      <input class="player-input" id="player-name-input" placeholder="Имя игрока..." onkeydown="if(event.key==='Enter')addPlayer()"/>
+      <button class="add-player-btn" onclick="addPlayer()">+</button>
+    </div>
+    <div class="players-chips" id="players-chips"></div>
+    <div class="separator"></div>
+    <button class="start-btn tod-btn" onclick="startTod()">Начать игру</button>
+  </div>
+</div>
+
+<!-- ══════ WHEEL SCREEN ══════ -->
+<div id="wheel-screen" class="screen">
+  <div class="wheel-wrap">
+    <button class="back-btn" onclick="goTo('home')" style="margin:0 auto 20px 0">← Назад</button>
+    <div class="wheel-title" id="wheel-turn-title">Крути колесо!</div>
+    <div class="wheel-container">
+      <div class="wheel-pointer">▼</div>
+      <canvas class="wheel-canvas" id="wheel-canvas" width="300" height="300"></canvas>
+    </div>
+    <div class="wheel-chosen" id="wheel-chosen"></div>
+    <div class="tod-type-btns hidden" id="tod-type-btns">
+      <button class="tod-type-btn tod-truth" onclick="getTodQuestion('truth')">Правда</button>
+      <button class="tod-type-btn tod-dare" onclick="getTodQuestion('dare')">Действие</button>
+    </div>
+    <div class="tod-question-box" id="tod-question-box">
+      <div class="tod-question-text" id="tod-question-text"></div>
+    </div>
+    <button class="spin-btn" id="spin-btn" onclick="spinWheel()">🎲 Крутить!</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+const state = {
+  mafiaPlayers: 6, mafiaCount: 2,
+  sheriff: false, doctor: false,
+  spyPlayers: 6, spyCount: 1,
+  hardcore: false,
+  selectedCat: 0,
+  selectedTime: 5,
+  cards: [], currentCard: 0, cardFlipped: false,
+  spyIndices: [], spyLocation: '', spyFakeLocation: '',
+  timerTotal: 0, timerLeft: 0, timerInterval: null, timerRunning: false,
+  todPlayers: [], todCurrentPlayer: -1,
+};
+
+// ══════════════════════════════════════════════
+// CATEGORIES & LOCATIONS
+// ══════════════════════════════════════════════
+const CATEGORIES = [
+  { name: 'Места', icon: '🏙️', locations: [
+    'Аэропорт','Банк','Больница','Казино','Кинотеатр','Пляж','Ресторан',
+    'Школа','Тюрьма','Цирк','Библиотека','Отель','Супермаркет','Парк',
+    'Стадион','Зоопарк','Музей','Вокзал','Полицейский участок','Кафе'
+  ]},
+  { name: 'Транспорт', icon: '✈️', locations: [
+    'Самолёт','Подводная лодка','Поезд','Автобус','Яхта','Космический корабль',
+    'Вертолёт','Метро','Паром','Грузовик','Такси','Трамвай'
+  ]},
+  { name: 'Природа', icon: '🌿', locations: [
+    'Джунгли','Пустыня','Арктика','Вулкан','Коралловый риф','Горная вершина',
+    'Болото','Пещера','Саванна','Водопад','Остров','Тундра'
+  ]},
+  { name: 'Фантастика', icon: '🚀', locations: [
+    'Космическая станция','Средневековый замок','Пиратский корабль',
+    'Секретная лаборатория','Подземный бункер','Параллельный мир',
+    'Затерянный храм','Арена гладиаторов','Виртуальная реальность','Сказочный лес'
+  ]},
+  { name: 'Еда', icon: '🍕', locations: [
+    'Пиццерия','Суши-ресторан','Пекарня','Фастфуд','Шашлычная',
+    'Кондитерская','Мороженица','Рынок','Виноградник','Пивоварня'
+  ]},
+  { name: 'Работа', icon: '💼', locations: [
+    'Офис','Фабрика','Шахта','Стройка','Фферма','Театр','Студия',
+    'Лаборатория','Редакция','Военная база'
+  ]},
+];
+
+// ══════════════════════════════════════════════
+// MAFIA ROLES
+// ══════════════════════════════════════════════
+const MAFIA_ROLES = {
+  mafia: { icon: '🔫', name: 'Мафия', desc: 'Ты мафия! Ночью убивай мирных жителей. Не раскройся!' },
+  sheriff: { icon: '👮', name: 'Шериф', desc: 'Ты шериф! Каждую ночь можешь проверить одного игрока.' },
+  doctor: { icon: '👨‍⚕️', name: 'Доктор', desc: 'Ты доктор! Каждую ночь можешь вылечить одного игрока.' },
+  civilian: { icon: '🧑', name: 'Мирный', desc: 'Ты мирный житель. Вычисли мафию днём на голосовании!' },
+};
+
+// ══════════════════════════════════════════════
+// TRUTH OR DARE DATA (90+90)
+// ══════════════════════════════════════════════
+const TOD = {
+  truth: [
+    'Что было самым неловким моментом в твоей жизни?',
+    'Расскажи о своей самой странной привычке',
+    'Кого из присутствующих ты бы взял на необитаемый остров?',
+    'Какой твой самый большой страх?',
+    'Что ты никогда не признавал родителям?',
+    'Какой ложью ты гордишься больше всего?',
+    'Кому из друзей ты завидуешь и почему?',
+    'Какой самый дорогой подарок ты когда-либо получал?',
+    'Был ли ты когда-нибудь влюблён в кого-то из этой комнаты?',
+    'Что ты делаешь когда никто не смотрит?',
+    'Какую тайну ты хранишь дольше всего?',
+    'Если бы ты мог изменить одно решение в жизни, что бы это было?',
+    'Кому ты бы позвонил, если бы оказался в беде в 3 ночи?',
+    'Что ты думаешь о ком-то из присутствующих, но никогда не говоришь?',
+    'Какое твоё самое постыдное музыкальное увлечение?',
+    'Какую вещь ты никогда не делал, но очень хочешь попробовать?',
+    'Если бы ты мог прочитать мысли одного человека в этой комнате, кого бы выбрал?',
+    'Какой твой самый странный сон?',
+    'Что тебя раздражает в людях больше всего?',
+    'Если бы тебе дали миллион прямо сейчас, на что бы потратил первым делом?',
+    'Какую суперспособность ты бы хотел иметь и зачем?',
+    'Кем ты хотел стать в детстве и почему передумал?',
+    'Что ты никогда не сделаешь снова в жизни?',
+    'Какой комплимент тебе говорят чаще всего и веришь ли ты в него?',
+    'Если бы тебя описали одним словом, какое это слово?',
+    'Что ты делал такого, за что до сих пор стыдно?',
+    'Какой твой самый нелепый страх?',
+    'Если бы ты мог поменяться жизнью с кем-то из присутствующих на день, кто бы это был?',
+    'Какой самый глупый поступок ты совершил ради кого-то?',
+    'Что ты думаешь о своей внешности честно?',
+    'Какая твоя самая большая мечта которую боишься озвучить?',
+    'Что бы ты сказал своему 10-летнему себе?',
+    'Если бы ты мог забыть один момент своей жизни, что бы это было?',
+    'Кто из знаменитостей вызывает у тебя раздражение и почему?',
+    'Что ты готов делать ради денег, а что никогда?',
+    'Какое твоё самое большое разочарование в людях?',
+    'Если бы ты мог стать невидимым на один день, что бы делал?',
+    'Что ты делаешь когда тебе скучно одному?',
+    'Какую ошибку ты совершаешь снова и снова?',
+    'Что тебя пугает в будущем?',
+    'Какой самый долгий период ты не разговаривал с другом и из-за чего?',
+    'Есть ли человек которому ты до сих пор не простил что-то?',
+    'Что делает тебя по-настоящему счастливым?',
+    'Какой твой самый большой комплекс?',
+    'Если бы ты мог прожить один день заново, какой бы это был день?',
+    'Какой самый странный поступок ты совершил ради внимания?',
+    'Что ты думаешь о социальных сетях честно?',
+    'Какое твоё самое большое достижение о котором никто не знает?',
+    'Был ли момент когда ты по-настоящему гордился собой?',
+    'Что тебя мотивирует когда всё идёт не так?',
+    'Если бы завтра конец света, с кем бы ты провёл последний день?',
+    'Какой совет ты бы дал себе год назад?',
+    'Что ты считаешь своим главным талантом?',
+    'Есть ли у тебя ритуал перед сном?',
+    'Что ты делаешь когда тебе очень плохо?',
+    'Если бы ты мог задать один вопрос любому человеку на земле, кому и что?',
+    'Что ты думаешь об этой компании честно?',
+    'Какой самый нелепый повод ты придумывал чтобы не идти куда-то?',
+    'Если бы твоя жизнь была фильмом, какой жанр это был бы?',
+    'Что ты терпеть не можешь в себе?',
+    'Какой самый смелый поступок ты совершил?',
+    'Что тебе легко даётся но трудно другим?',
+    'Если бы ты мог выбрать профессию заново, кем бы стал?',
+    'Что ты считаешь самым важным в дружбе?',
+    'Есть ли человек которому ты хочешь позвонить прямо сейчас?',
+    'Что тебя удивляет в людях до сих пор?',
+    'Если бы ты мог жить в любой стране, где бы это было?',
+    'Какой самый странный подарок ты получал?',
+    'Что для тебя значит успех?',
+    'Какое твоё самое большое сожаление?',
+    'Что бы ты сделал если бы знал что не провалишься?',
+    'Есть ли у тебя секрет который ты никому не расскажешь никогда?',
+    'Что тебя заставляет смеяться до слёз?',
+    'Если бы ты мог встретиться с любым человеком из истории, кто бы это был?',
+    'Какой самый важный урок тебе преподала жизнь?',
+    'Что ты делаешь первым делом когда просыпаешься?',
+    'Если бы ты мог изменить одну черту своего характера, что бы это было?',
+    'Что тебя вдохновляет?',
+    'Что ты ценишь больше всего в жизни?',
+    'Какое самое странное место где ты засыпал?',
+    'Есть ли у тебя еда которую ты ешь тайком чтобы никто не видел?',
+    'Что ты никогда не простишь другу?',
+    'Если бы тебе запретили пользоваться телефоном на месяц, что бы изменилось?',
+    'Какой самый дурацкий аргумент ты использовал в споре?',
+    'Что ты обычно говоришь что делаешь, но на самом деле никогда не делаешь?',
+    'Какое твоё самое любимое воспоминание с этой компанией?',
+    'Если бы тебе пришлось петь на улице за деньги, какую песню бы выбрал?',
+    'Что ты делал последним что заставило тебя краснеть?',
+    'Кому из присутствующих ты доверяешь больше всех?',
+    'Что ты никогда не скажешь своим родителям?',
+    'Какой самый странный вопрос ты когда-либо гуглил?',
+    'Если бы у тебя был двойник, что бы ты поручил ему делать вместо себя?',
+    'Что тебя больше всего раздражает утром?',
+    'Какую привычку ты пытался бросить но не смог?',
+    'Если бы ты мог выбрать имя себе сам, какое бы выбрал?',
+    'Что ты думаешь о людях которые врут ради блага других?',
+    'Какой момент в жизни сделал тебя взрослее?',
+    'Если бы тебе дали один час с любым человеком на планете, кого бы выбрал?',
+    'Что тебя пугает в самом себе?',
+    'Какой поступок ты хотел бы переделать в этом году?',
+  ],
+  dare: [
+    'Сделай 20 приседаний прямо сейчас',
+    'Позвони кому-нибудь из контактов и спой им Happy Birthday',
+    'Скажи комплимент каждому в комнате',
+    'Говори шёпотом следующие 5 минут',
+    'Изобрази животное по выбору группы',
+    'Сделай фото с самым нелепым выражением лица и отправь в общий чат',
+    'Назови 5 стран за 10 секунд',
+    'Сделай стойку на руках (хотя бы попробуй)',
+    'Говори с акцентом до следующего своего хода',
+    'Придумай и расскажи анекдот прямо сейчас',
+    'Сделай селфи и выложи в историю с хэштегом #partygames',
+    'Танцуй под музыку по выбору группы 30 секунд',
+    'Напиши сообщение случайному контакту: «Как дела, не видел тебя сто лет!»',
+    'Изобрази знаменитость — остальные угадывают',
+    'Съешь что-нибудь острое или кислое из того что есть дома',
+    'Говори только вопросами следующие 3 минуты',
+    'Изобрази робота пока кто-то не угадает',
+    'Сделай 10 отжиманий',
+    'Спой первый куплет любой песни не останавливаясь',
+    'Позвони маме или папе и скажи что очень соскучился',
+    'Попробуй лизнуть локоть',
+    'Закрой глаза и угадай кто стоит перед тобой на ощупь',
+    'Изобрази как ты выглядишь утром',
+    'Придумай рэп-куплет про человека справа от тебя',
+    'Говори всё задом наперёд следующие 2 минуты',
+    'Пройди по комнате как супермодель на подиуме',
+    'Скажи 5 комплиментов самому себе вслух без смущения',
+    'Напиши имя зубной щёткой держа её во рту',
+    'Поговори со стулом как будто это твой лучший друг 1 минуту',
+    'Назови 10 животных за 5 секунд',
+    'Сделай смешную озвучку для рекламы любого товара в комнате',
+    'Попроси у кого-то в комнате прощения максимально драматично',
+    'Нарисуй портрет человека слева от тебя за 30 секунд',
+    'Скажи скороговорку «Карл у Клары» 3 раза быстро',
+    'Придумай новое слово и дай ему определение',
+    'Сыграй сцену из фильма в одиночку пока все угадывают какой',
+    'Сделай 15 прыжков на одной ноге',
+    'Напиши сообщение в общий чат: «У меня есть тайна» и не объясняй',
+    'Изобрази учителя который объясняет смешной урок детям',
+    'Поговори с телефоном как будто это живой человек 1 минуту',
+    'Скажи комплимент каждому предмету в комнате',
+    'Попробуй удержать карандаш под носом как усы 1 минуту',
+    'Изобрази знаменитого спортсмена и его фирменное движение',
+    'Скажи вслух всё что ты сейчас думаешь в течение 1 минуты',
+    'Напиши другу: «Мне нужна твоя помощь» и жди реакции',
+    'Сделай монолог от лица своего домашнего питомца или воображаемого',
+    'Скажи фразу «я тебя люблю» на 5 разных языках',
+    'Расскажи историю используя только жесты без слов',
+    'Придумай тост за эту компанию прямо сейчас',
+    'Изобрази как ты ешь любимое блюдо максимально выразительно',
+    'Скажи скороговорку три раза быстро по выбору группы',
+    'Изобрази как выглядит твой идеальный день',
+    'Напиши стихотворение про кого-то из комнаты прямо сейчас',
+    'Сделай выражение лица для каждой погоды: дождь, солнце, снег, гроза',
+    'Изобрази как ты реагируешь на очень хорошие новости максимально бурно',
+    'Закрой глаза и угадай предмет который тебе дадут на ощупь',
+    'Говори только рифмуя каждое предложение следующие 3 минуты',
+    'Позвони кому-то и говори только цитатами из фильмов',
+    'Изобрази как выглядит твоя реакция на страшный фильм',
+    'Сделай 5 разных акцентов подряд',
+    'Напиши другу: «Угадай что я сейчас делаю» и жди ответа',
+    'Изобрази знаменитого политика произнося речь',
+    'Сделай смешное фото с предметом по выбору группы',
+    'Изобрази как ты ведёшь себя на первом свидании',
+    'Придумай рекламу себя как товара',
+    'Изобрази кота который хочет есть',
+    'Назови 10 блюд за 5 секунд',
+    'Покажи как ты выглядишь когда злишься молча',
+    'Придумай песню про человека напротив тебя и спой её',
+    'Пройди по комнате с книгой на голове не уронив её',
+    'Изобрази как бы ты вёл новостную программу',
+    'Скажи 5 вещей которые тебе нравятся в каждом из присутствующих',
+    'Изобрази как ты реагируешь на подарок который совсем не нравится',
+    'Потанцуй лезгинку или любой народный танец',
+    'Скажи алфавит в обратном порядке',
+    'Придумай супергероя и расскажи про его суперсилу и слабость',
+    'Изобрази как выглядит твоя реакция на будильник утром',
+    'Съешь что-нибудь с завязанными глазами и угадай что это',
+    'Говори только на «вы» ко всем следующие 5 минут',
+    'Изобрази известного певца исполняя любую песню',
+    'Покажи как ты танцуешь когда думаешь что никто не видит',
+    'Отвечай на всё что тебе говорят только «возможно» 3 минуты',
+    'Сделай смешной голос и говори им следующие 2 минуты',
+    'Изобрази всех присутствующих по очереди одним жестом',
+    'Напиши признание в дружбе одному из присутствующих и зачитай вслух',
+    'Придумай альтернативное название для каждого человека в комнате',
+    'Изобрази как выглядит самый скучный урок в школе',
+    'Скажи что-нибудь смешное не смеясь при этом',
+    'Попробуй угадать что думает человек напротив тебя прямо сейчас',
+    'Изобрази как ты ешь суши если никогда их не видел',
+    'Сделай 30 секунд рекламы любого предмета в комнате',
+    'Говори «мяу» вместо любого слова следующие 3 минуты',
+    'Изобрази персонажа из мультфильма по выбору группы',
+    'Скажи имена всех присутствующих перепутав их',
+    'Придумай мем про кого-то из присутствующих и опиши его словами',
+    'Изобрази как бы ты вёл кулинарное шоу готовя воздух',
+    'Напиши сообщение маме с вопросом: «Ты в меня веришь?» и покажи ответ',
+    'Скажи монолог злодея из любого фильма',
+    'Изобрази как ты ведёшь себя когда теряешь телефон',
+    'Сделай танец победителя и объясни за что ты победил',
+    'Говори только комплиментами следующие 3 минуты',
+  ],
+};
+
+// ══════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════
+function goTo(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ══════════════════════════════════════════════
+// CONTROLS
+// ══════════════════════════════════════════════
+function change(key, delta) {
+  const min = { mafiaPlayers:3, mafiaCount:1, spyPlayers:3, spyCount:1 }[key] || 1;
+  const max = { mafiaPlayers:15, mafiaCount:6, spyPlayers:15, spyCount:4 }[key] || 10;
+  state[key] = Math.max(min, Math.min(max, state[key] + delta));
+  document.getElementById(key+'-val').textContent = state[key];
+}
+
+const toggles = {};
+function togToggle(key) {
+  state[key] = !state[key];
+  const el = document.getElementById('tog-'+key);
+  el.classList.toggle('on', state[key]);
+}
+
+function selectTime(mins) {
+  state.selectedTime = mins;
+  document.querySelectorAll('.time-opt').forEach((el,i) => {
+    el.classList.toggle('selected', [0,3,5,8,10][i] === mins);
+  });
+}
+
+// ══════════════════════════════════════════════
+// BUILD CATEGORIES
+// ══════════════════════════════════════════════
+function buildCatGrid() {
+  const grid = document.getElementById('cat-grid');
+  grid.innerHTML = '';
+  CATEGORIES.forEach((cat, i) => {
+    const el = document.createElement('div');
+    el.className = 'cat-item' + (i === state.selectedCat ? ' selected' : '');
+    el.innerHTML = `<div class="cat-item-icon">${cat.icon}</div><div class="cat-item-name">${cat.name}</div>`;
+    el.onclick = () => {
+      state.selectedCat = i;
+      document.querySelectorAll('.cat-item').forEach((c,j) => c.classList.toggle('selected', j===i));
+    };
+    grid.appendChild(el);
+  });
+}
+
+// ══════════════════════════════════════════════
+// MAFIA
+// ══════════════════════════════════════════════
+function startMafia() {
+  const total = state.mafiaPlayers;
+  const roles = [];
+  for(let i=0;i<state.mafiaCount;i++) roles.push('mafia');
+  if(state.sheriff) roles.push('sheriff');
+  if(state.doctor) roles.push('doctor');
+  while(roles.length < total) roles.push('civilian');
+  shuffle(roles);
+  state.cards = roles.map((r,i) => ({ ...MAFIA_ROLES[r], player: i+1, type:'mafia' }));
+  state.currentCard = 0;
+  showCard();
+  goTo('card-screen');
+}
+
+// ══════════════════════════════════════════════
+// SPY
+// ══════════════════════════════════════════════
+function startSpy() {
+  const locs = CATEGORIES[state.selectedCat].locations;
+  const loc = locs[Math.floor(Math.random()*locs.length)];
+  state.spyLocation = loc;
+
+  // Fake location for hardcore
+  let fakeLoc = loc;
+  if(state.hardcore) {
+    const others = locs.filter(l => l !== loc);
+    fakeLoc = others[Math.floor(Math.random()*others.length)] || loc;
+  }
+  state.spyFakeLocation = fakeLoc;
+
+  const total = state.spyPlayers;
+  const spyCount = state.spyCount;
+  const indices = new Set();
+  while(indices.size < spyCount) indices.add(Math.floor(Math.random()*total));
+  state.spyIndices = [...indices];
+
+  state.cards = Array.from({length:total},(_,i) => {
+    const isSpy = state.spyIndices.includes(i);
+
+    if(isSpy && state.hardcore) {
+      return {
+        player: i+1, type:'spy', isSpy: true,
+        icon: '🧑',
+        name: fakeLoc,
+        desc: 'Найди шпиона среди игроков!',
+        location: fakeLoc,
+      };
+    }
+
+    if(isSpy && !state.hardcore) {
+      return {
+        player: i+1, type:'spy', isSpy: true,
+        icon: '🕵️',
+        name: 'Шпион!',
+        desc: 'Ты шпион! Веди себя естественно. Никто не должен тебя раскрыть!',
+        location: null,
+      };
+    }
+
+    return {
+      player: i+1, type:'spy', isSpy: false,
+      icon: '🧑',
+      name: loc,
+      desc: 'Найди шпиона среди игроков!',
+      location: loc,
+    };
+  });
+  state.currentCard = 0;
+  showCard();
+  goTo('card-screen');
+}
+
+// ══════════════════════════════════════════════
+// CARD DISPLAY
+// ══════════════════════════════════════════════
+function showCard() {
+  const c = state.cards[state.currentCard];
+  const total = state.cards.length;
+  document.getElementById('card-progress').textContent = `Игрок ${c.player} из ${total}`;
+  document.getElementById('card-num').textContent = c.player;
+  document.getElementById('card-icon').textContent = c.icon;
+  document.getElementById('card-role').textContent = c.name;
+  document.getElementById('card-desc').textContent = c.desc;
+  const locEl = document.getElementById('card-location');
+  if(c.location) { locEl.textContent = '📍 '+c.location; locEl.classList.remove('hidden'); }
+  else { locEl.classList.add('hidden'); }
+
+  // Reset flip
+  document.getElementById('card-front').classList.remove('hidden');
+  document.getElementById('card-back').classList.add('hidden');
+  document.getElementById('card-next-btn').classList.add('hidden');
+  state.cardFlipped = false;
+}
+
+function flipCard() {
+  if(state.cardFlipped) return;
+  state.cardFlipped = true;
+  document.getElementById('card-front').classList.add('hidden');
+  document.getElementById('card-back').classList.remove('hidden');
+
+  const isLast = state.currentCard === state.cards.length - 1;
+  const nextBtn = document.getElementById('card-next-btn');
+  nextBtn.classList.remove('hidden');
+  nextBtn.textContent = isLast
+    ? (state.cards[0].type === 'spy' && state.selectedTime > 0 ? '▶ Начать раунд' : '🏠 Главная')
+    : 'Передать следующему →';
+}
+
+function nextCard() {
+  const isLast = state.currentCard === state.cards.length - 1;
+  if(!isLast) {
+    state.currentCard++;
+    showCard();
+  } else {
+    if(state.cards[0].type === 'spy' && state.selectedTime > 0) {
+      startTimer();
+    } else {
+      goTo('home');
+    }
+  }
+}
+
+// ══════════════════════════════════════════════
+// TIMER
+// ══════════════════════════════════════════════
+function startTimer() {
+  goTo('timer-screen');
+  if(state.selectedTime === 0) {
+    document.getElementById('timer-ring-wrap').style.display = 'none';
+    document.getElementById('timer-digits').textContent = '∞';
+    document.getElementById('timer-label').textContent = 'Таймер отключён';
+    return;
+  }
+  document.getElementById('timer-ring-wrap').style.display = 'block';
+  state.timerTotal = state.selectedTime * 60;
+  state.timerLeft = state.timerTotal;
+  state.timerRunning = true;
+  document.getElementById('spy-reveal').style.display = 'none';
+  updateTimerDisplay();
+  state.timerInterval = setInterval(tickTimer, 1000);
+}
+
+function tickTimer() {
+  if(!state.timerRunning) return;
+  state.timerLeft--;
+  updateTimerDisplay();
+  if(state.timerLeft <= 0) {
+    clearInterval(state.timerInterval);
+    document.getElementById('timer-label').textContent = '⏰ Время вышло! Шпион побеждает!';
+    document.getElementById('timer-pause-btn').disabled = true;
+  }
+}
+
+function updateTimerDisplay() {
+  const m = Math.floor(state.timerLeft/60);
+  const s = state.timerLeft%60;
+  document.getElementById('timer-digits').textContent = m+':'+(s<10?'0':'')+s;
+  const frac = state.timerLeft / state.timerTotal;
+  const circ = 628;
+  document.getElementById('timer-ring').style.strokeDashoffset = circ*(1-frac);
+  const ring = document.getElementById('timer-ring');
+  ring.style.stroke = frac > 0.3 ? '#6c63ff' : frac > 0.1 ? '#ff6b35' : '#ff3d00';
+}
+
+function toggleTimer() {
+  state.timerRunning = !state.timerRunning;
+  document.getElementById('timer-pause-btn').textContent = state.timerRunning ? '⏸ Пауза' : '▶ Продолжить';
+}
+
+function revealSpy() {
+  const spyCards = state.cards.filter(c => c.isSpy);
+  const names = spyCards.map(c => `Игрок ${c.player}`).join(', ');
+  document.getElementById('spy-reveal-name').textContent = names;
+  document.getElementById('spy-reveal-loc').textContent = `Настоящая локация: ${state.spyLocation}`;
+  document.getElementById('spy-reveal').style.display = 'block';
+  if(state.timerInterval) clearInterval(state.timerInterval);
+  state.timerRunning = false;
+  document.getElementById('timer-pause-btn').textContent = '▶ Продолжить';
+  document.getElementById('timer-label').textContent = 'Шпион раскрыт!';
+}
+
+// ══════════════════════════════════════════════
+// TRUTH OR DARE
+// ══════════════════════════════════════════════
+function addPlayer() {
+  const inp = document.getElementById('player-name-input');
+  const name = inp.value.trim();
+  if(!name) return;
+  state.todPlayers.push(name);
+  inp.value = '';
+  renderChips();
+}
+
+function renderChips() {
+  const cont = document.getElementById('players-chips');
+  cont.innerHTML = '';
+  state.todPlayers.forEach((p,i) => {
+    const chip = document.createElement('span');
+    chip.className = 'player-chip';
+    chip.innerHTML = `${p} <span class="chip-remove" onclick="removePlayer(${i})">×</span>`;
+    cont.appendChild(chip);
+  });
+}
+
+function removePlayer(i) {
+  state.todPlayers.splice(i,1);
+  renderChips();
+}
+
+function startTod() {
+  if(state.todPlayers.length < 2) { alert('Добавь минимум 2 игрока!'); return; }
+  goTo('wheel-screen');
+  drawWheel();
+  document.getElementById('tod-type-btns').classList.add('hidden');
+  document.getElementById('tod-question-box').style.display = 'none';
+  document.getElementById('wheel-chosen').textContent = '';
+  document.getElementById('wheel-turn-title').textContent = 'Крути колесо!';
+}
+
+// ══════════════════════════════════════════════
+// WHEEL
+// ══════════════════════════════════════════════
+let wheelAngle = 0, wheelSpinning = false;
+
+function drawWheel(highlightIdx = -1) {
+  const canvas = document.getElementById('wheel-canvas');
+  const ctx = canvas.getContext('2d');
+  const cx = 150, cy = 150, r = 140;
+  const players = state.todPlayers;
+  const arc = (2*Math.PI)/players.length;
+  const colors = ['#6c63ff','#ff6b35','#00d4aa','#ff3f81','#ffd93d','#6bceff','#b163ff','#ff6363'];
+  ctx.clearRect(0,0,300,300);
+  players.forEach((p,i) => {
+    const start = wheelAngle + arc*i - Math.PI/2;
+    const end = start + arc;
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r,start,end);
+    ctx.closePath();
+    ctx.fillStyle = i === highlightIdx ? '#fff' : colors[i%colors.length];
+    ctx.fill();
+    ctx.strokeStyle = '#0a0a0f';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.save();
+    ctx.translate(cx,cy);
+    ctx.rotate(start + arc/2);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = i === highlightIdx ? '#000' : '#fff';
+    ctx.font = 'bold 14px Manrope, sans-serif';
+    ctx.fillText(p, r-10, 5);
+    ctx.restore();
+  });
+  // Center dot
+  ctx.beginPath();
+  ctx.arc(cx,cy,12,0,2*Math.PI);
+  ctx.fillStyle = '#0a0a0f';
+  ctx.fill();
+}
+
+function spinWheel() {
+  if(wheelSpinning) return;
+  wheelSpinning = true;
+  document.getElementById('tod-type-btns').classList.add('hidden');
+  document.getElementById('tod-question-box').style.display = 'none';
+  document.getElementById('wheel-chosen').textContent = '';
+  document.getElementById('spin-btn').disabled = true;
+
+  const players = state.todPlayers;
+  const arc = (2*Math.PI)/players.length;
+  const extra = 10 + Math.random()*10; // rounds
+  const targetAngle = Math.random()*2*Math.PI;
+  const totalSpin = extra*2*Math.PI + targetAngle;
+  const duration = 3000;
+  const start = performance.now();
+  const startAngle = wheelAngle;
+
+  function animate(now) {
+    const elapsed = now - start;
+    const t = Math.min(elapsed/duration, 1);
+    const ease = 1 - Math.pow(1-t,4);
+    wheelAngle = startAngle + totalSpin*ease;
+    drawWheel();
+    if(t < 1) { requestAnimationFrame(animate); return; }
+
+    // Find winner: pointer is at top (angle = π/2 from start)
+    const norm = ((-(wheelAngle - Math.PI/2)) % (2*Math.PI) + 2*Math.PI) % (2*Math.PI);
+    const idx = Math.floor(norm / arc) % players.length;
+    state.todCurrentPlayer = idx;
+    drawWheel(idx);
+    document.getElementById('wheel-chosen').textContent = players[idx] + '!';
+    document.getElementById('wheel-turn-title').textContent = `Ход: ${players[idx]}`;
+    document.getElementById('tod-type-btns').classList.remove('hidden');
+    wheelSpinning = false;
+    document.getElementById('spin-btn').disabled = false;
+  }
+  requestAnimationFrame(animate);
+}
+
+function getTodQuestion(type) {
+  const list = TOD[type];
+  const q = list[Math.floor(Math.random()*list.length)];
+  const box = document.getElementById('tod-question-box');
+  box.style.display = 'flex';
+  document.getElementById('tod-question-text').textContent = q;
+  box.style.borderLeft = type === 'truth' ? '4px solid #6c63ff' : '4px solid #ff6b35';
+}
+
+// ══════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════
+function shuffle(arr) {
+  for(let i=arr.length-1;i>0;i--) {
+    const j=Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+}
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+buildCatGrid();
+</script>
+</body>
+</html>
