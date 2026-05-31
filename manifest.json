@@ -1,13 +1,16 @@
 {
-  "background_color": "#0a0a0f",
-  "dir": "ltr",
-  "display": "standalone",
   "name": "Party Games",
-  "orientation": "any",
-  "scope": "/",
   "short_name": "Party Games",
+  "description": "Мафия, Шпион и Правда или Действие — игры для компании",
   "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0f",
   "theme_color": "#6c63ff",
-  "id": "com.partygames.app",
-  "description": "Мафия, Шпион и Правда или Действие — игры для компании"
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
 }
